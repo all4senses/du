@@ -120,7 +120,8 @@ function du_misc_loadUserExtendedData($uid) {
     
     $query = db_select('realname', 'rn')
       ->fields('rn', array('realname'))
-      ->fields('g', array('field_u_gplus_profile_value'));
+      //->fields('g', array('field_u_gplus_profile_value'))
+      ;
     $query->condition('uid', $uid);
     //$query->leftJoin('field_data_field_u_gplus_profile', 'g', 'g.entity_id = ' . $uid);
     $userExtendedData = $query->execute()->fetchObject();
