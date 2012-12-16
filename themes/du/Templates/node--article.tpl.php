@@ -152,7 +152,7 @@
                       <?php $url = 'http://' . $_SERVER['SERVER_NAME'] . url('node/' . $node->nid); ?>
                       
                       <div class="main">
-                          <?php echo dmm_social_getSocialiteButtons($url, $title); ?> 
+                          <?php echo du_user_getSocialiteButtons($url, $title); ?> 
                       </div> <!-- main share buttons -->
 
                       <div class="others">
