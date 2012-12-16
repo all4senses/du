@@ -16,7 +16,7 @@
       
       <div id="logo-block">
         <a href="<?php print $front_page; ?>" title="<?php print 'Дом Уюта'; ?>" id="logo">
-          <?php /* <img src="<?php //print '/sites/all/themes/dmm/css/images/dmm-logo.png'; ?>" alt="<?php print 'Дом Уюта'; ?>" title="<?php print 'Дом Уюта'; ?>" /> */?>
+          <?php /* <img src="<?php //print '/sites/all/themes/du/css/images/du-logo.png'; ?>" alt="<?php print 'Дом Уюта'; ?>" title="<?php print 'Дом Уюта'; ?>" /> */?>
         </a>
         <div class="descr">
           <div class="title">Дом Уюта</div>
@@ -24,7 +24,7 @@
         </div>
       </div>
       
-      <?php echo '<div id="block-dmm-blocks-header-links"><div class="follow-us">Follow Us</div>', du_blocks_get_headerLinks(), '</div>', 
+      <?php echo '<div id="block-du-blocks-header-links"><div class="follow-us">Follow Us</div>', du_blocks_get_headerLinks(), '</div>', 
               '<div class="user-header">', du_user_userBlock(), '</div>',
               render($page['header']); ?>
     </nav>
