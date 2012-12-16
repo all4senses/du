@@ -1,0 +1,300 @@
+<?php
+
+/**
+ * @file
+ * Module for building and managing site's blocks.
+ */
+
+
+//module_load_include('inc', 'du_blocks', 'inc/constants');
+
+
+/**
+ * Implements hook_block_info().
+ */
+function du_blocks_block_info() {
+  
+  
+  $blocks['main_menu_om_aboutus'] = array(
+    'info' => t('OM About Us'),
+    'cache' => DRUPAL_CACHE_GLOBAL,
+  );
+  
+  $blocks['footer_menu'] = array(
+    'info' => t('Footer menu (du)'),
+    'cache' => DRUPAL_CACHE_GLOBAL,
+  );
+  $blocks['header_links'] = array(
+    'info' => t('Header links'),
+    'cache' => DRUPAL_CACHE_GLOBAL,
+  );
+  
+    
+  $blocks['tags'] = array(
+    'info' => t('Shows a tag cloud page'),
+    'cache' => DRUPAL_CACHE_GLOBAL,
+  );
+  $blocks['tags_block'] = array(
+    'info' => t('Shows a tag cloud block'),
+    'cache' => DRUPAL_CACHE_GLOBAL,
+  );
+  
+  $blocks['slideshow_two'] = array(
+    'info' => t('Slideshow two (AdvancedSlider)'),
+    'cache' => DRUPAL_CACHE_GLOBAL,
+  );
+  
+   
+  $blocks['du_login'] = array(
+    'info' => t('Du user login'),
+    'cache' => DRUPAL_CACHE_GLOBAL,
+  );
+  
+  return $blocks;
+}
+
+
+/**
+ * Implements hook_block_view().
+ */
+function du_blocks_block_view($delta = '') {
+  $block = array();
+  switch ($delta) {      
+    
+    case 'main_menu_om_aboutus':
+      $block['subject'] = t('OM About Us');
+      $block['content'] = du_blocks_get_omMenuBlock_byTitle('О нас', 'du_blocks_get_omMenuBlock_AboutUs');
+      break;
+    
+    case 'footer_menu':
+      $block['subject'] = t('Footer menu');
+      $block['content'] = du_blocks_get_footerMenu();
+      break; 
+    case 'header_links':
+      $block['subject'] = t('Header links');
+      $block['content'] = du_blocks_get_headerLinks();
+      break; 
+    
+    case 'tags':
+      $block['subject'] = t('Shows a tag cloud page');
+      $block['content'] = du_blocks_buildTagsCloudBlock();
+      break;
+    case 'tags_block':
+      $block['subject'] = t('Случайные теги');
+      $block['content'] = du_blocks_buildTagsCloudBlock(TRUE);
+      break;
+    
+    case 'slideshow_two':
+      $block['subject'] = t('Slideshow two (AdvancedSlider)');
+      $block['content'] = du_image_getSlideshow('AdvancedSlider');
+      break;
+    
+    case 'du_login':
+      $block['subject'] = t('Du user login');
+      $block['content'] = du_user_loginTop();
+      break;
+  
+  }
+
+  return $block;
+}
+
+
+/**
+ * Returns a themed Header links block.
+ */
+function du_blocks_get_headerLinks() {
+  $menu = menu_build_tree('menu-header-links');
+  return theme('du_misc_headerLinks', array('submenu' => array('below' => $menu)));
+}
+
+
+/**
+ * Returns a themed Footer menu.
+ */
+function du_blocks_get_footerMenu() {
+  $menu = menu_build_tree('menu-footer-menu');
+  return theme('du_misc_submenuSimple', array('submenu' => array('below' => $menu), 'class' => 'menu', 'delimiter' => '<li> | </li>'));
+}
+
+
+/**
+ * Dispatcher for getting themed block for MegaMenu by a block title.
+ */
+function du_blocks_get_omMenuBlock_byTitle($title, $function) {
+
+  /*
+  global $language;
+  $types = cache_get('types_' . $language->language);
+  Expire = current time + 2 hours.
+  cache_set('types_' . $language->language, $types, 'cache', time() + 7200);
+  */
+  
+  // Get main menu wireframe menu.
+  $submenu = du_blocks_getSubmenuByTitle('main-menu', $title);
+  return $function($submenu);
+}
+
+
+/**
+ * Returns a themed block OM-Menu by a menu name.
+ */
+function du_blocks_get_omMenu_getTabbedBlock_byTopTermName($topTermName) {
+
+    drupal_add_library('system', 'ui.core');
+    drupal_add_library('system', 'ui.tabs');
+
+    $path_to_custom_js = drupal_get_path('module', 'du_blocks') . '/js/';
+    drupal_add_js($path_to_custom_js . 'du_mainMenuBlocks.js');
+  
+    $tabs_captions_terms = du_misc_OmBlock_getSupersectionsTerms_ByTopTermName($topTermName);
+    $tabs_contents = du_misc_OmBlock_getSectionsLists_bySupersectionsTerms($tabs_captions_terms);
+
+    $out_tabs_captions = NULL;
+    $out_tabs_contents = NULL;
+    foreach($tabs_captions_terms as $tabs_captions_term) {
+      $out_tabs_captions .= '<li><a href="#tabs-' . $tabs_captions_term->tid . '">' . $tabs_captions_term->name . '</a></li>';
+      $out_tabs_contents .= 
+        '<div id="tabs-' . $tabs_captions_term->tid . '">
+           <div>Content of ' . $tabs_captions_term->name . '</div>
+           <div>' . $tabs_contents[$tabs_captions_term->tid] . '</div>
+        </div>';
+    }
+    $out = '<div class="tabs"><ul>' . $out_tabs_captions . '</ul>' . $out_tabs_contents . '</div>';
+  
+  return $out;
+  
+}
+
+
+/**
+ * Returns a themed block OM-Menu.
+ */
+function du_blocks_get_omMenuBlock_AboutUs($submenu) {
+  return theme('du_misc_submenuSimple', array('submenu' => $submenu, 'class' => 'block'));
+}
+
+
+/**
+ * Returns a submenu from a menu.
+ */
+function du_blocks_getSubmenuByTitle($menu_name, $submenu_title) {
+  $menu = menu_build_tree($menu_name);
+  if(!$menu) {
+    return NULL;
+  }
+  foreach ($menu as $submenu) {
+    if ($submenu['link']['link_title'] == $submenu_title) {
+      return $submenu;
+    }
+  }
+  return NULL;
+}
+
+
+/**
+ * Wrap a block content in proper block's divs.
+ */
+function du_blocks_wrapInBlockThemed($block_data, $block)
+{
+  if(!isset($block['content']) || !$block['content']) {
+      return null;
+  }
+  if (is_array($block['content'])) {
+    $block['content'] = render($block);
+  }
+  
+  if (isset($block_data['shadow']) && $block_data['shadow']) {
+    return 
+      '<section id="block-' . $block_data['module'] . '-' . $block_data['delta'] . '" class="block gcb block-' . $block_data['module'] . '">' 
+        . '<div class="inside">'
+            . ( ($block['subject'] && (!isset($block_data['subject_visible']) || $block_data['subject_visible']) )
+                ? 
+                '<div class="block-icon pngfix"></div><h2 class="block-title">' . $block['subject'] . '</h2>'
+                :
+                '') 
+            . '<div class="content">' . $block['content'] . '</div>
+          </div> <!-- /.inside -->
+          <div class="shadow"></div>
+      </section>';
+  }
+  else {
+    return 
+      '<section id="block-' . $block_data['module'] . '-' . $block_data['delta'] . '" class="block gcb block-' . $block_data['module'] . '">' 
+         . ( ($block['subject'] && (!isset($block_data['subject_visible']) || $block_data['subject_visible']) )
+            ? 
+            '<div class="block-icon pngfix"></div><h2 class="block-title">' . $block['subject'] . '</h2>'
+            :
+            '') 
+         . '<div class="content">' . $block['content'] . '</div>
+      </section>';
+  }
+}
+
+
+/**
+ * Returns a content of a block wrapped in proper divs.
+ */
+function du_blocks_getBlockThemed($block_data)
+{
+  $block = module_invoke($block_data['module'], 'block_view', $block_data['delta']);
+  if ($block) {
+    if (@$block_data['no_subject']) {
+      $block['subject'] = '';
+    }
+    elseif (isset($block_data['subject'])) {
+      $block['subject'] = $block_data['subject'];
+    }
+    return du_blocks_wrapInBlockThemed($block_data, $block);
+  }
+  return NULL;
+}
+
+
+/**
+ * Returns a tag cloud block.
+ */
+function du_blocks_buildTagsCloudBlock($side_block = NULL) {
+  
+  // Uncomment to use a cache.
+  // global $language;
+  // $tags = cache_get('tags_page_block' . $language->language);
+  
+  // Comment to use a cache.
+  if (1) { 
+    
+  // Uncomment to use a cache.
+  //if (!$tags || empty($tags->data) || $tags->expire < time()) {
+    
+    if ($side_block) {
+      $tags_array = du_misc_getTags(4);
+    }
+    else {
+      $tags_array = du_misc_getTags();
+    }
+
+    if (!$tags_array) {
+      return NULL;
+    }
+    
+    // Simple List.
+    // $tags = theme('gcb_misc_submenuSimple', array('submenu' => array('below' => $tags_array), 'class' => 'tags'));
+    // Tag cloud.
+    
+    $tags_array = tagadelic_sort_tags(tagadelic_build_weighted_tags($tags_array, 12));
+    
+    $tags = theme('du_misc_tagadelicWeighted_acceptPredefinedTagsPaths', array('tags' => $tags_array));
+  
+    // Expire = current time + 4 hours.
+   
+    // Uncomment to use a cache.
+    // cache_set('tags_page_block' . $language->language, $tags, 'cache', time() + 14400);
+    
+  }
+  else {
+    $tags = $tags->data;
+  }
+  
+  $out = $side_block ? '<div class="tags">' . $tags . '</div><div class="more">' . l('Все теги', 'tags') . '</div>' : '<div class="tags cloud">' . $tags . '</div>';
+  return $out;
+}

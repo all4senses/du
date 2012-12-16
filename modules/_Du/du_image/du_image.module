@@ -1,0 +1,237 @@
+<?php
+
+
+/**
+ * Launch a slider.
+ */
+function du_image_getSlideshow($type = NULL, $id = NULL) {
+  
+  switch ($type) {
+    
+    case 'AdvancedSlider':
+      
+      du_image_addAdvancedSliderJs();
+      
+      $out = '
+    
+          <div class="advanced-slider glossy-square-blue" id="responsive-slider">
+            <ul class="slides">
+            
+              <li class="slide" id="s-1">
+              
+                <div class="html" style="position: absolute; z-index: 10; top: 100px; left: 300px;">
+                  <div class="content-box">
+                      <p class="title">Inline HTML content</p>
+                      <p>Lorem ipsum dolor sit amet, consectetur adipisicing elit.</p>
+                      <a class="button" href="#">Read More</a>
+                  </div>
+                </div>
+
+                <a rel="slider-lightbox[]" href="http://www.youtube.com/watch?v=JVuUwvUUPro?width=700&height=400" title="Some lightbox description">
+                  <img class="image" src="sites/all/libraries/jquery.plugins/advanced_slider/examples/presentation-assets/images/slides/image1.jpg" alt=""/>
+                </a>
+                
+                  <img class="thumbnail" src="sites/all/libraries/jquery.plugins/advanced_slider/examples/presentation-assets/images/thumbnails/image1.jpg" alt="Slide 1"/>
+                <div class="caption">This is just a simple caption.</div>
+              </li>
+
+
+              <li class="slide rounded-caption" id="s-2">
+              
+                <div class="html" style="position: absolute; z-index: 10; top: 100px; left: 300px;">
+
+                  
+                  
+                  <div class="images-box">
+                      <img src="sites/all/libraries/jquery.plugins/advanced_slider/examples/presentation-assets/images/thumbnails/image2.jpg" alt=""/>
+                      <img src="sites/all/libraries/jquery.plugins/advanced_slider/examples/presentation-assets/images/thumbnails/image2.jpg" alt=""/>
+                      <img src="sites/all/libraries/jquery.plugins/advanced_slider/examples/presentation-assets/images/thumbnails/image2.jpg" alt=""/>
+                      <img src="sites/all/libraries/jquery.plugins/advanced_slider/examples/presentation-assets/images/thumbnails/image2.jpg" alt=""/>
+                  </div>
+                  
+                  <div class="content-box">
+                      <p class="title">Inline HTML content</p>
+                      <p>Lorem ipsum dolor sit amet, consectetur adipisicing elit.</p>
+                      <a class="button" href="#">Read More</a>
+                  </div>
+                  
+                  
+                </div>
+            
+                <img class="thumbnail" src="sites/all/libraries/jquery.plugins/advanced_slider/examples/presentation-assets/images/thumbnails/image2.jpg" alt="Slide 2"/>
+
+              </li>
+
+
+
+              <li class="slide" id="s-3">
+              
+                <div class="html" style="position: absolute; z-index: 10; top: 100px; left: 300px;">
+                  <div class="content-box">
+                      <p class="title">Inline HTML content</p>
+                      <p>Lorem ipsum dolor sit amet, consectetur adipisicing elit.</p>
+                      <a class="button" href="#">Read More</a>
+                  </div>
+                </div>
+                
+                <a rel="slider-lightbox[g]" href="sites/all/libraries/jquery.plugins/advanced_slider/examples/presentation-assets/images/slides/image4.jpg" title="Some lightbox description FOR PICTURE">
+                  <img class="image" src="sites/all/libraries/jquery.plugins/advanced_slider/examples/presentation-assets/images/slides/image4.jpg" alt=""/>
+                </a>
+                  <img class="thumbnail" src="sites/all/libraries/jquery.plugins/advanced_slider/examples/presentation-assets/images/thumbnails/image4.jpg" alt="Slide 4"/>
+                <div class="caption">You can also add <b>HTML</b> elements like <a href="http://codecanyon.net">links</a> or <input type="button" value="Buttons"/></div>
+              </li>
+
+
+
+              <li class="slide" id="s-4">
+              
+                <div class="html" style="position: absolute; z-index: 10; top: 100px; left: 300px;">
+                  <div class="content-box">
+                      <p class="title">Inline HTML content</p>
+                      <p>Lorem ipsum dolor sit amet, consectetur adipisicing elit.</p>
+                      <a class="button" href="#">Read More</a>
+                  </div>
+                </div>
+                
+                <img class="image" src="sites/all/libraries/jquery.plugins/advanced_slider/examples/presentation-assets/images/slides/image6.jpg" alt=""/>
+                  <img class="thumbnail" src="sites/all/libraries/jquery.plugins/advanced_slider/examples/presentation-assets/images/thumbnails/image6.jpg" alt="Slide 6"/>
+                <div class="caption"><u>Title</u><br/><br/>This is a list of items:<ul><li>first item</li><li>second item</li><li>third item</li></ul></div>
+              </li>
+
+
+
+            </ul>
+          </div>
+
+        ';
+      
+      break;
+  }
+  
+  
+  return $out;
+}
+
+
+/**
+ * Adds js to a page for a AdvancedSlider slideshow.
+ */
+function du_image_addAdvancedSliderJs() {
+  
+  //drupal_add_js('sites/all/libraries/jquery.plugins/advanced_slider/excanvas.compiled.js');
+  //////drupal_add_js('sites/all/libraries/jquery.plugins/advanced_slider/jquery.transition.min.js');
+  drupal_add_js('sites/all/libraries/jquery.plugins/advanced_slider/jquery.touchSwipe.min.js');
+  drupal_add_js('sites/all/libraries/jquery.plugins/advanced_slider/jquery.advancedSlider.min.js');
+  
+  ////drupal_add_js('sites/all/libraries/jquery.plugins/advanced_slider/jquery.easing.1.3.min.js');
+  
+          
+  drupal_add_js('sites/all/libraries/jquery.plugins/advanced_slider/jquery.prettyPhoto.custom.min.js');
+  
+  drupal_add_css('sites/all/libraries/jquery.plugins/advanced_slider/css/base/advanced-slider-base.css', array('preprocess' => FALSE)); // array('group' => CSS_THEME, 'preprocess' => FALSE)
+  //////drupal_add_css('sites/all/libraries/jquery.plugins/advanced_slider/examples/responsive-proportional/css/glossy-square/blue/glossy-square-blue.css', array('preprocess' => FALSE)); // array('group' => CSS_THEME, 'preprocess' => FALSE)  
+  ////drupal_add_css('sites/all/libraries/jquery.plugins/advanced_slider/examples/responsive-proportional/css/responsive-proportional-slider.css', array('preprocess' => FALSE)); // array('group' => CSS_THEME, 'preprocess' => FALSE)  
+  //
+//drupal_add_css('sites/all/libraries/jquery.plugins/advanced_slider/examples/basic/css/pixel/pixel.css', array('preprocess' => FALSE)); // array('group' => CSS_THEME, 'preprocess' => FALSE)
+  
+  //drupal_add_css('http://fonts.googleapis.com/css?family=Ruluko|Sirin+Stencil', array('preprocess' => FALSE, 'external' => TRUE)); // array('group' => CSS_THEME, 'preprocess' => FALSE)
+  
+  drupal_add_css('sites/all/libraries/jquery.plugins/advanced_slider/examples/presentation-assets/presentation.css', array('preprocess' => FALSE)); // array('group' => CSS_THEME, 'preprocess' => FALSE)  
+  
+  drupal_add_css('sites/all/libraries/jquery.plugins/advanced_slider/examples/lightbox/css/lightbox/prettyPhoto.css', array('preprocess' => FALSE)); // array('group' => CSS_THEME, 'preprocess' => FALSE)  
+  ////////drupal_add_css('sites/all/libraries/jquery.plugins/advanced_slider/examples/lightbox/css/lightbox-slider.css', array('preprocess' => FALSE)); // array('group' => CSS_THEME, 'preprocess' => FALSE)  
+  
+
+  //////drupal_add_css('sites/all/libraries/jquery.plugins/advanced_slider/css/slider-skins/glossy-curved-rounded/violet/glossy-curved-rounded-violet.css', array('preprocess' => FALSE)); // array('group' => CSS_THEME, 'preprocess' => FALSE)  
+  
+  drupal_add_css('sites/all/libraries/jquery.plugins/advanced_slider/css/slider-skins/minimal-small/minimal-small.css', array('preprocess' => FALSE)); // array('group' => CSS_THEME, 'preprocess' => FALSE)  
+  //drupal_add_css('sites/all/libraries/jquery.plugins/advanced_slider/css/scrollbar-skins/scrollbar-3-light/scrollbar-3-light.css', array('preprocess' => FALSE)); // array('group' => CSS_THEME, 'preprocess' => FALSE)  
+  
+  $path_to_module = drupal_get_path('module', 'du_image');
+  drupal_add_js($path_to_module . '/js/du_add_advancedSlider.js');
+  //drupal_add_css($path_to_module . '/css/du_add_advancedSlider.css', array('preprocess' => FALSE)); // array('group' => CSS_THEME, 'preprocess' => FALSE)
+}
+
+
+/**
+ * Finds images in a body html.
+ */
+function du_image_findImages($body, $nid, $amount = null){ 
+    // $amount - how many images to include in the result array
+    
+    /* // in template
+     preg_match_all("/<img[^']*?src=\"([^']*?)\"[^']*?>/", $content['body']['#items'][0]['value'], $matches, PREG_SET_ORDER);
+    */
+    preg_match_all("/<img[^']*?src=\"([^']*?)\"[^']*?>/", $body, $matches, PREG_SET_ORDER);
+    
+    // find the rest img data
+    
+    $gallery = null;
+    
+    if(is_array($matches))
+        foreach($matches as $key=>$match)
+        {
+            $cur_img = array();
+
+            preg_match_all('/(alt|title|class)="([^"]*)"/i',$match[0], $matches2, PREG_SET_ORDER);
+            foreach($matches2 as $match2)
+                $cur_img[$match2[1]] = $match2[2];
+            $cur_img['src'] = $match[1];
+            
+            // just in case, save themed img tag
+            // with default preset - redefine it if needed !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+            $cur_img['style_name'] = 'album_thumb';
+            $default_file_path = variable_get('file_public_path', 'f');
+            $cur_img['path'] = str_replace('/' . $default_file_path . '/', 'public://', $cur_img['src']);
+            $cur_img['thumb'] = theme('image_style', $cur_img);
+            $cur_img['class'] = 'group_' . $nid;
+            $gallery[] = $cur_img;
+
+            if($amount AND $key + 1 == $amount)
+                break;
+        }  
+    
+    return $gallery;
+}
+
+
+/**
+ * Implements hook node_view.
+ */
+function du_image_node_view($node, $view_mode) {
+  
+  $content_with_zoomable_pictures = array('article', 'blog_post');
+  
+  if ($view_mode == 'full') {
+      
+    // Make zoomable picture in a normal full content for specific content types.
+    if (in_array($node->type, $content_with_zoomable_pictures) && $show_type == 'full') {
+      du_image_addZoomableImagesJs();
+    }
+    
+    
+  } // End of if ($view_mode == 'full') {
+  else {
+    // Teaser. 
+    if (in_array($node->type, $content_with_zoomable_pictures)) {
+      $extra_data = unserialize(@$node->field_extra_data['und'][0]['value']);
+      if (@$extra_data['teaser']) {
+        $node->main_content = $extra_data['teaser'];
+      }
+    }
+  } // End of If Teaser.
+            
+}
+
+
+/**
+ * Adds js to a page for making all images zoomable.
+ */
+function du_image_addZoomableImagesJs() {
+  //1, 3, 4, 
+  drupal_add_js('sites/all/libraries/jquery.plugins/Colorbox/jquery.colorbox.js');
+  drupal_add_css('sites/all/libraries/jquery.plugins/Colorbox/css1/colorbox.css', array('preprocess' => FALSE)); // array('group' => CSS_THEME, 'preprocess' => FALSE)
+
+  $path_to_module = drupal_get_path('module', 'du_image');
+  drupal_add_js($path_to_module . '/js/du_makeImagesZoomable.js');
+}

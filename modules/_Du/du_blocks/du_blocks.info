@@ -1,0 +1,6 @@
+name = Du Blocks
+package = "Dom Uyuta"
+description = "Defines different blocks for the site including ones for side bars and OM-Menu"
+core = 7.x
+tags[] = Du
+files[] = du_blocks.module

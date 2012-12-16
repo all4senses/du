@@ -1,0 +1,9 @@
+name = Du Misc
+description = Miscelaneous functions
+core = 7.x
+version = "7.x"
+core = "7.x"
+project = "Du Misc"
+package = "Dom Uyuta"
+
+

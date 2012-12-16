@@ -1,0 +1,244 @@
+<?php
+
+/**
+ * Implementation of hook_menu().
+ */
+function du_pages_menu() {
+    
+  $items = array();
+  
+  $items['home'] = array( 
+    'page callback' => 'du_pages_getHomePage',
+    'access arguments' => array('access content'),
+    'type' => MENU_CALLBACK,
+  );
+    
+  return $items;
+}
+
+
+/**
+ * Returns home page.
+ */
+function du_pages_getHomePage() {
+  
+  $out = '';
+  
+  $front_preface_node = du_pages_getPrefaceByKey('front');
+  $front_preface_node->title_no_link = TRUE;
+  $front_preface_node_view = node_view($front_preface_node, 'full');
+
+  $out .= render($front_preface_node_view);
+  
+  
+  // Get block Home teasers.
+  $block_data = array('module' => 'views', 'delta' => 'content_feeds-home_teasers_block', 'shadow' => FALSE, 'no_subject' => TRUE);
+  $out .= du_blocks_getBlockThemed($block_data);
+  
+  
+  $out .= render($front_preface_node_view['field_preface_bottom']);
+ 
+  return $out;
+}
+
+
+/**
+ * Returns preface node by key.
+ */
+function du_pages_getPrefaceByKey($key) {
+    
+    $preface_node = NULL;
+    
+    $query = db_select('node', 'n');
+    $query->join('field_data_field_key', 'pk', "pk.entity_id = n.nid"); 
+    $query->fields('n', array('nid'))  
+          //->fields('pn', array('field_key_value')) 
+          ->condition('n.type', 'preface')
+          ->condition('pk.field_key_value', $key); 
+    $preface_nid = $query->execute()->fetchField(); 
+    if ($preface_nid) {
+      $preface_node = node_load($preface_nid);
+    }
+    return $preface_node;
+}
+
+
+/**
+ * Implements hook node_presave.
+ */
+function du_pages_node_presave($node) {
+  
+    // Build teaser, gallery, find images (main, sharing, etc).
+  
+    $content_with_teaser = array('article', 'blog_post');
+    
+    if (in_array($node->type, $content_with_teaser)) {
+      
+      // If this is a new node, yet without nid, let's find out supposed its id
+      if(!$nid = $node->nid) {
+        $nid = db_next_id(db_query('SELECT MAX(nid) FROM {node}')->fetchField());
+      }
+
+      $extra_data = du_pages_getExtraDataFromBody($node->body, $nid, $node->type);
+      $node->field_extra_data['und'][0]['value'] = serialize($extra_data);
+      
+    } // End of if (in_array($node->type, $content_with_teaser)) {
+}
+
+
+/**
+ * Build a trimmed teaser, a main image, a sharing image, etc from a source body.
+ */
+function du_pages_getExtraDataFromBody($node_field_body, $nid, $content_type = NULL, $characters_num = NULL, $only_teaser = FALSE) {
+ 
+  $body = $node_field_body['und'][0]['value'];
+  $summary = $node_field_body['und'][0]['summary'];
+  
+  $main_image_html = NULL;
+  $main_image = NULL;
+  $matches = NULL;
+
+  // Get the main image for a teaser and for sharing
+  // and then clear img tags from the body.
+  if (preg_match('/<img[^>]+>/i', $body, $matches)) {
+    
+    preg_match_all('/(alt|title|src)="([^"]*)"/i', $matches[0], $matches);
+    foreach ($matches[1] as $index => $key) {
+      $main_image[$key] = $matches[2][$index];
+    }
+    $main_image['src'] = str_replace('%20', ' ', $main_image['src']);
+    $stream_path = du_misc_getStreamUriFromRelativePath($main_image['src']);
+    $main_image['uri'] = $stream_path;
+    
+    $image_size = getimagesize(ltrim($main_image['src'], '/'));
+
+    // Scale only.
+    if ($image_size[0] / $image_size[1] > 1) {
+      $style_name = 'teaser_thumb_h';
+      $main_image_html = theme('image_style', array( 'path' => $stream_path, 'style_name' => $style_name));
+    }
+    else {
+      $style_name = 'teaser_thumb_v';
+      $main_image_html = theme('image_style', array( 'path' => $stream_path, 'style_name' => $style_name));
+    }
+    
+    // Image for sharing.
+    if ($image_size[0] / $image_size[1] > 1) {
+      // Too wide. will not be cutted.
+      $main_image['share_themed'] = image_style_url('share_wide', $stream_path);
+    }
+    elseif ($image_size[1] / $image_size[0] < 1) {
+      // Too tall. will not be cutted.
+      $main_image['share_themed'] = image_style_url('share_tall', $stream_path);
+    }
+    else {
+      //Normal image, will not be cutted.
+      $main_image['share_themed'] = image_style_url('share', $stream_path);
+    }
+    
+    $main_image_html = '<div class="thumb">' . $main_image_html . '</div>';
+    
+    // Clear img tags out of a body.
+    $body = preg_replace('/<img[^>]+>/i', '', $body);
+  }
+
+  
+  
+  // Define a text for a teaser.
+  switch ($content_type) {
+        
+   default:
+        if (!$characters_num) {
+          
+          if ($main_image_html) {
+            $characters_num = 130;
+          }
+          else {
+            $characters_num = 250;
+          }
+          
+        }
+
+        // $teaser = text_summary($body_full_markup, 'full_html', $characters_num);
+        if ($summary) {
+          $teaser = trim(drupal_substr(strip_tags($summary), 0, $characters_num));
+        }
+        else {
+          $teaser = trim(drupal_substr(strip_tags($body), 0, $characters_num));
+        }
+        
+        // Replace the last word with ...
+        // preg_match('/^.*\s(.*)$/i', trim(strip_tags($teaser)), $matches);
+        // $last_pos = strrpos($teaser, $matches[1]);
+        $last_pos = strrpos($teaser, ' ');
+        $teaser = substr_replace($teaser, '... ' . l(t('Read More'), 'node/' . $nid, array('attributes' => array('class' => array('more')))), $last_pos);
+
+        break;
+  }
+  
+  if ($only_teaser) {
+    return $main_image_html . $teaser;
+  }
+  else {
+    return array('teaser' => $main_image_html . $teaser, 'main_image' => $main_image);
+  }
+  
+}
+
+
+/**
+ * Implements hook form_alter.
+ */
+function du_pages_form_alter(&$form, &$form_state, $form_id) {
+  
+  //dpm($form_id); dpm($form);
+
+  if (isset($form['field_extra_data'])) {
+    $form['field_extra_data']['#access'] = FALSE;
+  }
+  
+  switch($form['#id']) {
+    
+    case 'blog_post_node_form':
+    case 'article_node_form':
+        $form['actions']['save_draft'] = array(
+          '#type' => 'submit',
+          '#value' => 'Save Draft',
+          '#submit' => array('node_form_submit'),
+          '#weight' => 6,
+        );
+
+        $form['#submit'][] = 'du_pages_submitForm_nodeDraft';
+        
+        break;
+  }
+  
+}
+
+
+/**
+ * Custom validate of article type form.
+ *
+ * @param array &$form
+ *   Array with declared form.
+ *
+ * @param array &$form_state
+ *   Array with current form state.
+
+ * @return void
+ *   Return nothing.
+ */
+function du_pages_submitForm_nodeDraft(&$form, &$form_state) {
+
+  //dpm($form_state['values']);
+  if ($form_state['values']['op'] == 'Save Draft') {
+    $form_state['values']['status'] = 0;
+    drupal_set_message(t('Attention! This content is saved as draft and is not published now!'), 'warning');
+      // Doesn't work
+      //form_set_value($form['options'], array('status' => array('#default_value' => 0)), $form_state);
+      //form_set_value($form['options']['status'], array('#default_value' => 0), $form_state);
+  }
+  else {
+    $form_state['values']['status'] = 1;
+  }
+}

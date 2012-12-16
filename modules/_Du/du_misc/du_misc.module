@@ -1,0 +1,546 @@
+<?php
+
+/**
+ * Implementation of hook_menu().
+ */
+
+function du_misc_menu() {
+  
+  $items = array();
+  
+  $items['test'] = array(
+    'page callback' => 'du_misc_testPage',
+    'access arguments' => array('access content'),
+    'type' => MENU_CALLBACK,
+  );
+    
+  return $items;
+  
+}
+
+/**
+ * Convert path from Drupal stream uri.
+ */
+function du_misc_testPage() {
+  return 'test page';
+}
+
+
+/**
+ * Convert a relative or absolute path to Drupal stream uri.
+ */
+function du_misc_getStreamUriFromRelativePath($path) {
+  $file_default_scheme = file_default_scheme();
+  $default_file_path = variable_get('file_' . $file_default_scheme . '_path', ($file_default_scheme == 'public' ? 'f' : 'pf'));
+
+  $stream_path = str_replace('http://' . $_SERVER['SERVER_NAME'], '', $path);
+  $stream_path = ltrim($stream_path, '/');
+  return $file_default_scheme . ':/' . str_replace($default_file_path, '', $stream_path);
+}
+
+
+/**
+ * Push field tags to metatags in the Head.
+ */
+function du_misc_pushTagsToMetatags($name, $value, $weight = 'NA') {
+  switch ($name) {
+    case 'keywords':
+      $t = '';
+      $tags = element_children($value);
+      foreach ($tags as $tag) {
+        $t .= $t ? ', ' . $value[$tag]['#title'] : $value[$tag]['#title'];
+      }
+      if ($t) {
+        du_misc_addMetatag($name, $t, NULL, $weight);
+      }
+      break;
+  }
+}
+
+
+/**
+ * Helper function to add metatag to a current page.
+ */
+function du_misc_addMetatag($name, $content, $href = NULL) {
+  if ($content) {
+    if ($name == 'title') {
+      drupal_set_title($content);
+    }
+    else {
+      $meta = array(
+        '#type' => 'html_tag',
+        '#tag' => 'meta',
+        '#attributes' => array(
+            'name' => $name,
+            'content' => $content,
+        )
+      );
+      drupal_add_html_head($meta, $name);
+    }
+  } // End of if ($content) {
+  elseif($href) {
+    $meta = array(
+      '#tag' => 'link',
+      '#attributes' => array(
+          'rel' => $name,
+          'href' => $href,
+      )
+    );
+    drupal_add_html_head($meta, $name);
+  } // End of elseif($href) {
+}
+
+
+/**
+ * Form with a fieldset of Add content section for Admin Content DU page (by Views).
+ */
+function du_misc_AddContentSection_form() {
+  
+  global $user;
+  
+  $types = node_type_get_types();
+  
+  // Hide some content tupes if not a root.
+  if ($user->uid != 1) {
+    unset($types['admin_page'], $types['preface'], $types['webform']);
+  }
+  
+  $options = array('' => '- Select a content type -');
+  foreach ($types as $type => $value) {
+    $options[str_replace('_', '-', $type)] = $value->name;
+  }
+  
+  $form['add_content'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Add a new content'),
+    '#collapsible' => TRUE,
+  );
+  $form['add_content']['select_type'] = array(
+    '#type' => 'select',
+    //'#title' => 'Select content type',
+    '#options' => $options,
+    '#attributes' => array('id' => 'select_type',  'onChange' => "top.location.href='http://" . $_SERVER['SERVER_NAME'] . "/node/add/" . "' + document.getElementById('select_type').options[document.getElementById('select_type').selectedIndex].value"),
+  );
+  
+  return $form;
+}
+
+
+/**
+ * Convert json to array;
+ */
+function du_misc_jsonToArray($string) {
+
+  $json = preg_replace('/.*\[(.*)\].*/i', '$1', $string);
+
+  // Correct wrong quotes from HyperComments.
+  $json = urldecode(str_replace('%26quot%3B', '%22', urlencode(ltrim(rtrim($json, '}'), '{'))));
+  
+  $json = explode(',"', $json);
+  
+  foreach ($json as $pair) {
+    $pair = explode('":', $pair);
+    $key = trim($pair[0], '"');
+    $value = trim($pair[1], '"');
+    $json_data[$key] = $value;
+  }
+  
+  return $json_data;
+}
+
+
+/**
+ * Convert path from Drupal stream uri.
+ */
+function du_misc_getPathFromStreamUri($uri) {
+  $file_default_scheme = file_default_scheme();
+  $default_file_path = variable_get('file_' . $file_default_scheme . '_path', '/f');
+  
+  return $default_file_path . str_replace($file_default_scheme . ':/', '', $uri);
+}
+
+
+/**
+ * Returns a current url.
+ */
+function du_misc_getCurrentUrl() {
+    if (isset($_SERVER['REDIRECT_URL']) && $_SERVER['REDIRECT_URL']) {
+      $url = $_SERVER['REDIRECT_URL'];
+    }
+    else {
+      $url = explode('?', $_SERVER['REQUEST_URI']);
+      $url = $url[0];
+    }
+    
+    $url = "http://" . $_SERVER['SERVER_NAME'] . $url;
+    return $url;
+}
+
+
+/**
+ * Implements hook_theme().
+ */
+function du_misc_theme($existing, $type, $theme, $path) {
+  return array(
+    'du_misc_submenuSimple' => array(
+      'variables' => array('vars' => null),
+    ),
+    'du_misc_headerLinks' => array(
+      'variables' => array('vars' => null),
+    ),
+     
+    // Altered Tagadelic weighted tag cloud.
+    'du_misc_tagadelicWeighted_acceptPredefinedTagsPaths' => array(
+      'variables' => array('tags' => array())
+    ),
+
+  );
+}
+
+
+/**
+ * Theme function that renders the HTML for the tags.
+ *
+ * @ingroup themable
+ */
+function theme_du_misc_tagadelicWeighted_acceptPredefinedTagsPaths(array $vars) {
+  $tags = $vars['tags'];
+  $output = '';
+
+  foreach ($tags as $tag) {
+    $output .= l($tag->name, isset($tag->link['href']) ? $tag->link['href'] : 'taxonomy/term/' . $tag->tid, array(
+      'attributes' => array(
+        'class' => array("tagadelic", "level" . $tag->weight),
+        'rel' => 'tag',
+        'title'  => $tag->description,
+        )
+      )
+    ) . " \n";
+  }
+  
+  
+  if(isset($vars['voc'])){
+    if (count($tags) >= variable_get('tagadelic_block_tags_' . $vars['voc']->vid, 12)) {
+      $output .= theme('more_link', array('title' => t('more tags'), 'url' => "tagadelic/chunk/{$vars['voc']->vid}"));
+    }
+  }
+
+  return $output;
+}
+  
+
+/**
+ * Simple theming of nested submenu.
+ */
+function theme_du_misc_headerLinks($vars) {
+  if(empty($vars['submenu']['below'])) {
+    return NULL;
+  }
+
+  $class = isset($vars['class']) ? $vars['class'] : 'header-links';
+  $delimiter = isset($vars['delimiter']) ? $vars['delimiter'] : '';
+  $out = '<ul class="' . $class . '">';
+  $count = 0;
+  foreach ($vars['submenu']['below'] as $submenu) {
+    if (isset($submenu['link']['hidden']) && $submenu['link']['hidden']) {
+      continue;
+    }
+    $out .= ($count ? $delimiter : '') . '<li>' . l(t($submenu['link']['link_title']), $submenu['link']['href'], array('attributes' => array('class' => array($submenu['link']['link_title']), 'title' => $submenu['link']['options']['attributes']['title'], 'target' => '_blank' ))) . '</li>';
+    $count++;
+  }
+  $out .= '</ul>';
+  return $out;
+}
+
+
+/**
+ * Simple theming of nested submenu.
+ */
+function theme_du_misc_submenuSimple($vars) {
+  if(empty($vars['submenu']['below'])) {
+    return NULL;
+  }
+  $level = isset($vars['level']) ? $vars['level'] : 0;
+  $class = isset($vars['class']) ? $vars['class'] : 'om-links';
+  $delimiter = isset($vars['delimiter']) ? $vars['delimiter'] : '';
+  $out = '<ul class="du ' . $class . ' lvl-' . $level . '">';
+  $count = 0;
+  foreach ($vars['submenu']['below'] as $submenu) {
+    if (is_object($submenu)) {
+      $submenu = (array) $submenu;
+    }
+    if (isset($submenu['link']['hidden']) && $submenu['link']['hidden']) {
+      continue;
+    }
+    $out .= ($count ? $delimiter : '') . '<li>';
+    if($level) {
+      for ($i = 0; $i < $level; $i++ ) {
+        $out .= '--';
+      }
+    }
+    $title = t($submenu['link']['link_title']);
+    if(isset($submenu['count']) && $submenu['count']) {
+      $title .= ' (' . $submenu['count'] . ')';
+    }
+    // If the field Description has '<nolink>' don't show link for this item
+    if(isset($submenu['link']['localized_options']['attributes']['title']) && strtolower($submenu['link']['localized_options']['attributes']['title']) == '<nolink>') {
+      $out .= $title;
+    }
+    else {
+      $out .= l($title, $submenu['link']['href']);
+    }
+    $out .= '</li>';
+    if (!empty($submenu['below'])) {
+      // Recursion call.
+      $out .= '<li>' . theme('du_misc_submenuSimple', array('submenu' => $submenu, 'level' => ($level + 1), 'class' => $class, 'delimiter' => $delimiter )) . '</li>';
+    }
+    $count++;
+  }
+  $out .= '</ul>';
+  return $out;
+}
+
+
+/**
+ * Returns tags list. 
+ */
+function du_misc_getTags($limit = NULL) {
+  
+  $tags = NULL;
+  $voc = taxonomy_vocabulary_machine_name_load('tags');
+  $types = array();
+
+  $query = db_select('taxonomy_term_data', 'td')
+        ->fields('td', array('name', 'tid', 'description'));
+  $query->leftJoin('taxonomy_index', 'ti', 'ti.tid = td.tid');
+  $query->leftJoin('node', 'n', 'n.nid = ti.nid');
+  //$query->where('n.nid = ti.nid AND n.type = :type', array(':type' => $content_type))
+  $query->where('n.nid = ti.nid')
+        ->addExpression('COUNT(n.nid)', 'count');
+  $query->groupBy('td.name');
+  //$query->condition('td.vid', $voc->vid);
+  if ($limit) {
+    $query->range(0, $limit);
+    // a4s Random only if the limit is set.
+    $query->orderRandom();
+  }
+  $query->orderRandom();
+  $results = $query->execute();
+
+  // Necessary for pathauto_cleanstring().
+  module_load_include('inc', 'pathauto');
+
+  foreach($results as $result) {
+
+    // Translate terms to the current language.
+    // $result->name = i18n_string_translate(array('taxonomy', 'term', $result->tid, 'name'), $result->name);
+
+    //$result->link = array('link_title' => $result->name, 'href' => $base_url . '/tags/' . pathauto_cleanstring($result->name));
+    $result->link = array('link_title' => $result->name, 'href' => 'taxonomy/term/' . $result->tid);
+    $tags[$result->tid] = $result;
+  }
+
+  return $tags;
+}
+
+
+/**
+ * Implements hook_views_pre_render().
+ */
+function du_misc_views_pre_render(&$view) {
+  
+  // Add a prefaces for the some views pages.
+  // Also adds metatags for Tags pages.
+  
+  //dpm($view->name); dpm($view->current_display);
+  
+  $key = 'view-' . $view->name . '-' . $view->current_display;
+  $do_attach_preface = FALSE;
+  
+  switch($key) {
+    
+    default:
+      $do_attach_preface = FALSE;
+      break;
+      
+//    case 'view-content_feeds-sections_page':
+//    case 'view-taxonomy_term-page_by_tag':
+//      $do_attach_preface = TRUE;
+//      break;
+  }
+  
+  
+  if ($do_attach_preface && $preface_node = du_misc_getPrefaceByKey($key)) {
+
+    // Change the title of the view (main page title actually)
+    if (isset($preface_node->metatags['title']['value'])) {
+      $view->build_info['title'] = $preface_node->metatags['title']['value'];
+    }
+    else{
+      $view->build_info['title'] = $preface_node->title;
+    }
+    
+    // Show plain caption, not a link for a full node as a full node itself will be unpublished and unreachable.
+    $preface_node->title_no_link = TRUE;
+    // Hide the title of the preface.
+    // $preface_node->title = '';
+    // Works, but it's shown after exposed filters.
+    $view->attachment_before = render(node_view($preface_node, 'full'));
+    
+  } // End of if ($do_attach_preface && $preface_node = du_misc_getPrefaceByKey($key)) {
+   
+} 
+
+
+/**
+ * Returns preface node by key.
+ */
+function du_misc_getPrefaceByKey($key) {
+    
+    $preface_node = NULL;
+    
+    $query = db_select('node', 'n');
+    $query->join('field_data_field_key', 'pk', "pk.entity_id = n.nid"); 
+    $query->fields('n', array('nid'))  
+          //->fields('pn', array('field_key_value')) 
+          ->condition('n.type', 'preface')
+          ->condition('pk.field_key_value', $key); 
+    $preface_nid = $query->execute()->fetchField(); 
+    if ($preface_nid) {
+      $preface_node = node_load($preface_nid);
+    }
+    return $preface_node;
+}
+
+
+/**
+ * Get a picture from a remote server.
+ */
+function du_misc_curl_file_from_remote_site_likeBrowser($url, $file_local_abs)
+{
+	
+    $curl = curl_init();
+
+    // Setup headers - I used the same headers from Firefox version 2.0.0.6
+    // below was split up because php.net said the line was too long. :/
+    $header[0] = "Accept: text/xml,application/xml,application/xhtml+xml,";
+    $header[0] .= "text/html;q=0.9,text/plain;q=0.8,image/png,*/*;q=0.5";
+    $header[] = "Cache-Control: max-age=0";
+    $header[] = "Connection: keep-alive";
+    $header[] = "Keep-Alive: 300";
+    $header[] = "Accept-Charset: ISO-8859-1,utf-8;q=0.7,*;q=0.7";
+    $header[] = "Accept-Language: en-us,en;q=0.5";
+    $header[] = "Pragma: ";
+    // browsers keep this blank.
+
+    $referers = array("google.com", "yahoo.com", "msn.com", "ask.com", "live.com");
+    $choice = array_rand($referers);
+  	//if ($referer == "") 
+    $referer = "http://www." . $referers[$choice] . "/";
+
+    //$browsers = array("Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.0.3) Gecko/2008092510 Ubuntu/8.04 (hardy) Firefox/3.0.3", "Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.8.1) Gecko/20060918 Firefox/2.0", "Mozilla/5.0 (Windows; U; Windows NT 6.0; en-US; rv:1.9.0.3) Gecko/2008092417 Firefox/3.0.3", "Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 6.0; SLCC1; .NET CLR 2.0.50727; Media Center PC 5.0; .NET CLR 3.0.04506)");
+    //$choice2 = array_rand($browsers);
+    //$lines = file('/home/xxx/public_html/sites/all/modules/xxx/ua.txt');
+    //$browser = trim($lines[$agentid]);
+
+    curl_setopt($curl, CURLOPT_URL, $url);
+    //curl_setopt($curl, CURLOPT_USERAGENT, $browser);
+    curl_setopt($curl, CURLOPT_HTTPHEADER, $header);
+    curl_setopt($curl, CURLOPT_REFERER, $referer);
+    //curl_setopt($curl, CURLOPT_AUTOREFERER, true);
+    curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($curl, CURLOPT_TIMEOUT, 300);
+    curl_setopt($curl, CURLOPT_MAXREDIRS, 7);
+    curl_setopt($curl, CURLOPT_FOLLOWLOCATION, true);
+
+    $data = curl_exec($curl);
+
+    if ($data === false) {
+      $data = curl_error($curl);
+      dpm('curl error');
+      dpm($data);
+      // close the connection
+      curl_close($curl);
+      return $data;
+    }
+
+    // close the connection
+    curl_close($curl);
+
+    // write content to a file
+    file_put_contents($file_local_abs, $data);
+
+    return null; //OK
+}
+
+
+/**
+ * Saves or updates a field.
+ */
+function du_misc_fieldSave($field_name, $entity_id, $data, $entity_type = 'node', $bundle = NULL) {
+  
+  if(!$bundle) {
+    $bundle = $entity_type;
+  }
+  
+  $query = db_select('field_data_field_' . $field_name, 'f');
+  $query->fields('f', array('field_' . $field_name . '_value'))
+        ->condition('f.entity_id', $entity_id)
+        ->condition('f.entity_type', $entity_type);
+  $result = $query->execute(); //->fetchField();
+  
+  if ($result->rowCount()) {
+    // Need update an existing field.
+    db_update('field_data_field_' . $field_name)
+      ->fields(array(
+        'entity_id' => $entity_id,
+        'delta' => 0,  
+        'revision_id'=> $entity_id,    
+        'field_' . $field_name . '_value' => $data,
+      ))
+      ->condition('entity_id', $entity_id)
+      ->condition('entity_type', $entity_type)
+      ->execute();
+
+    db_update('field_revision_field_' . $field_name)
+      ->fields(array(
+        'entity_id' => $entity_id,
+        'delta' => 0,  
+        'revision_id'=> $entity_id,     
+        'field_' . $field_name . '_value' => $data,
+      ))
+      ->condition('entity_id', $entity_id)
+      ->condition('entity_type', $entity_type)
+      ->execute();
+  }
+  else {
+    // Need create a new field.
+    db_insert('field_data_field_' . $field_name) 
+      ->fields(array(
+        'entity_type'=> $entity_type,
+        'bundle'=> $bundle,
+        'deleted'=> 0,                
+        'entity_id' => $entity_id,
+        'delta' => 0,  
+        'revision_id'=> $entity_id,
+        'language'=> 'und',  
+        'field_' . $field_name . '_value' => $data,
+      ))
+      ->execute();
+
+    db_insert('field_revision_field_' . $field_name)
+      ->fields(array(
+        'entity_type'=> $entity_type,
+        'bundle'=> $bundle,
+        'deleted'=> 0,                
+        'entity_id' => $entity_id,
+        'delta' => 0,  
+        'revision_id'=> $entity_id,
+        'language'=> 'und',  
+        'field_' . $field_name . '_value' => $data,
+      ))
+      ->execute();
+  }
+
+  field_cache_clear();
+}
