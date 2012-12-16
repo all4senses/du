@@ -329,7 +329,7 @@ function du_user_userBlock() {
     */
   }
   else {
-    $out = '<span class="user-profile">Привет, ' . theme('username', array('account' => $user, 'link_path' => 'user/' . $user->uid))  . '</span><span class="user-logout">' . l('Выйти', 'user/logout', array('query' => array('destination' => ltrim(str_replace('#comment-form', '', $_SERVER['REQUEST_URI']), '/')))) . '</span>';
+    $out = '<span class="user-profile">Привет, ' . theme('username', array('account' => $user, 'link_path' => 'user/' . $user->uid))  . '!</span><span class="user-logout">' . l('Выйти', 'user/logout', array('query' => array('destination' => ltrim(str_replace('#comment-form', '', $_SERVER['REQUEST_URI']), '/')))) . '</span>';
   }
   
   return $out;
