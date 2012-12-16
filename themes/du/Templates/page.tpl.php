@@ -24,7 +24,8 @@
         </div>
       </div>
       
-      <?php echo '<div id="block-du-blocks-header-links"><div class="follow-us">Follow Us</div>', du_blocks_get_headerLinks(), '</div>', 
+      <?php echo '<div id="block-du-blocks-header-links">',
+              //'<div class="follow-us">Мы в соцсетях</div>', du_blocks_get_headerLinks(), '</div>', 
               '<div class="user-header">', du_user_userBlock(), '</div>',
               render($page['header']); ?>
     </nav>

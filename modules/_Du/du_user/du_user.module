@@ -317,17 +317,19 @@ function du_user_comment_delete($comment) {
 function du_user_userBlock() {
   
   global $user;
+  $out = NULL;
   
   if (!$user->uid) {
-    
+    /*
     du_user_initLogin();
     // V1, no need to launch drupal_add_library('system', 'drupal.ajax');
     //$out = ctools_modal_text_button(t('Login'), 'ajax_register/login/nojs', t('Login'), 'ctools-modal-ctools-ajax-register-style');
     // V2, need to launch drupal_add_library('system', 'drupal.ajax') in du_user_initLogin(), but possible to set more params in l()...
     $out = l('Войти', 'ajax_register/login/nojs', array('html' => TRUE, 'attributes' => array('rel' => 'nofollow', 'class' => array('du-login', 'ctools-use-modal', 'ctools-modal-ctools-ajax-register-style'), 'title' => 'Войти')));
+    */
   }
   else {
-    $out = '<span class="user-profile">Приветствуем, ' . theme('username', array('account' => $user, 'link_path' => 'user/' . $user->uid))  . '</span><span class="user-logout">' . l('Выйти', 'user/logout', array('query' => array('destination' => ltrim(str_replace('#comment-form', '', $_SERVER['REQUEST_URI']), '/')))) . '</span>';
+    $out = '<span class="user-profile">Привет, ' . theme('username', array('account' => $user, 'link_path' => 'user/' . $user->uid))  . '</span><span class="user-logout">' . l('Выйти', 'user/logout', array('query' => array('destination' => ltrim(str_replace('#comment-form', '', $_SERVER['REQUEST_URI']), '/')))) . '</span>';
   }
   
   return $out;
