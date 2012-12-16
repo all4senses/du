@@ -18,6 +18,168 @@ function du_misc_menu() {
   
 }
 
+
+
+
+function gv_misc_getMenuTrail() {
+  
+  
+  if(!$url_aliased = @$_SERVER['REDIRECT_URL']) {
+    return FALSE;
+  }
+    
+  //dpm('Target aliased url = ' . $url_aliased);
+  
+  $breadcrumbs = cache_get('gv_breadcrumbs_for_menu');
+  //dpm($breadcrumbs);
+  
+  $breadcrumbs = !$breadcrumbs ? array() : $breadcrumbs->data;
+  if (isset($breadcrumbs[$url_aliased])) {
+    //dpm('breadcrumb is found in cache');
+    return $breadcrumbs[$url_aliased];
+  }
+  
+  // Search for the url in the menu and define a breadcrumb.
+  $main_menu = NULL;
+  
+  // Check if the url is presented in the menu.
+  if($main_menu_all_items = cache_get('gv_main_menu_all_items')) {
+    $main_menu_all_items = $main_menu_all_items->data;
+  }
+  else {
+    $main_menu = menu_build_tree('main-menu');
+    foreach ($main_menu as $key_top => $value_top) {
+      $main_menu_all_items[] = strpos($value_top['link']['href'], 'node/') !== FALSE ? $value_top['link']['href'] : '/' . $value_top['link']['href'];
+      if (!empty($value_top['below'])) {
+        foreach ($value_top['below'] as $key_below => $value_below) {
+          $main_menu_all_items[] = strpos($value_below['link']['href'], 'node/') !== FALSE ? $value_below['link']['href'] : '/' . $value_below['link']['href'];
+        }
+      }
+    }
+    //dpm('Define gv_main_menu_all_items');
+    cache_set('gv_main_menu_all_items', $main_menu_all_items);
+  }
+  
+  //dpm($main_menu_all_items);
+  
+  $url_not_aliased = (arg(0) == 'node' ? 'node/' . arg(1) : NULL);
+  if (!in_array($url_aliased, $main_menu_all_items) && !in_array($url_not_aliased, $main_menu_all_items)) {
+    // Target url is not in the menu.
+    //dpm('Target url is not in the menu... Exit');
+    return FALSE;
+  }
+  
+  
+  //dpm('in the menu! Define breadcrumb...');
+  if (!$main_menu) {
+    $main_menu = menu_build_tree('main-menu');
+  }
+  //dpm($main_menu);
+  
+  
+  
+  $breadcrumb = '';
+  
+  
+  
+  
+  //dpm($url_aliased);
+  //dpm($url_not_aliased);
+  
+  foreach ($main_menu as $key_top => $value_top) {
+    // Check top link.
+    if ($value_top['link']['hidden']) {
+      continue;
+    }
+    if ('/' . $value_top['link']['href'] == $url_aliased || $value_top['link']['href'] == $url_not_aliased) {
+      //dpm('Found top url ' . $value_top['link']['link_title']);
+      $breadcrumb = theme('breadcrumb', array('breadcrumb' => array(l('Главная', NULL), $value_top['link']['link_title'] )));
+    }
+    else {
+      // Check nested links.
+      if (!empty($value_top['below'])) {
+        foreach ($value_top['below'] as $key_below => $value_below) {
+          if ($value_below['link']['hidden']) {
+            continue;
+          }
+          if ('/' . $value_below['link']['href'] == $url_aliased || $value_below['link']['href'] == $url_not_aliased) {
+            //dpm('Found below url ' . $value_below['link']['link_title'] . ' --- ' . $key_top . ' --- ' . $key_below);
+            $breadcrumb = theme('breadcrumb', array('breadcrumb' => array(l('Главная', NULL), l($value_top['link']['link_title'], $value_top['link']['href']), $value_below['link']['link_title'] )));
+          }
+        }
+      }
+    }
+    
+  }
+
+  $breadcrumbs[$url_aliased] = $breadcrumb;
+  cache_set('gv_breadcrumbs_for_menu', $breadcrumbs);
+  
+  return $breadcrumb;
+}
+
+/**
+ * Loads an additional user_data for articles, etc.
+ *
+ * @param $uid
+ *   A user account uid.
+ * @return
+ *   The user's generated object with additional data.
+ */
+function gv_misc_loadUserExtendedData($uid) {
+  
+  $cid = 'gv_userExtendedData_all';
+  $cache = cache_get($cid, 'cache');
+  
+  if ($cache && !empty($cache->data) && !empty($cache->data[$uid]) && $cache->expire > time()) {
+    $out = $cache->data[$uid];
+  }
+  else 
+  {
+    $userExtendedData_all = $cache ? $cache->data : array();
+    
+    $query = db_select('realname', 'rn')
+      ->fields('rn', array('realname'))
+      ->fields('g', array('field_u_gplus_profile_value'));
+    $query->condition('uid', $uid);
+    //$query->leftJoin('field_data_field_u_gplus_profile', 'g', 'g.entity_id = ' . $uid);
+    $userExtendedData = $query->execute()->fetchObject();
+    
+    $userExtendedData_all[$uid] = $userExtendedData;
+
+    cache_set($cid, $userExtendedData_all, 'cache', strtotime('+31 day'));
+    $out = $userExtendedData_all[$uid];
+  }
+    
+  return $out;
+}
+
+
+/**
+ * Implements hook_taxonomy_term_delete().
+ * Removes tag's references and its twin tag from a main tag voc references from nodes.
+ */
+function gv_misc_taxonomy_term_delete($main_term) {
+  // Search for the corresponding main voc term tid.
+  $main_vid = 1; // 2 - main voc - Tags.
+  
+  // Define fields names.
+  $main_field_name = 'tags';
+  
+  // Delete corresponding main tag from fields.
+  gv_misc_fieldDelete($main_field_name, NULL, 'field_' . $main_field_name . '_tid', $main_term->tid, $nids);
+
+  // Delete corresponding main tag from taxonomy_index.
+  db_delete('taxonomy_index')
+    ->condition('tid', $main_term->tid)
+    ->condition('nid', $nids, 'IN')
+    ->execute();
+
+  // Clear all caches.
+  drupal_flush_all_caches();
+}
+
+
 /**
  * Convert path from Drupal stream uri.
  */

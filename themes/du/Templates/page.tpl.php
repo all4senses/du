@@ -29,7 +29,6 @@
               render($page['header']); ?>
     </nav>
 
-    <?php ////if ($breadcrumb): print $breadcrumb; endif;?>
   </header> 
 
   
@@ -45,6 +44,12 @@
       
       <section id="main" role="main" class="clearfix">
 
+          <?php 
+            if ($breadcrumb): 
+              print $breadcrumb; 
+            endif;
+          ?>
+        
           <?php print $messages; ?>
           <a id="main-content"></a>
           
