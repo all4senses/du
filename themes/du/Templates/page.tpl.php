@@ -16,7 +16,7 @@
       
       <div id="logo-block">
         <a href="<?php print $front_page; ?>" title="<?php print 'Дом Уюта'; ?>" id="logo">
-          <img src="<?php //print '/sites/all/themes/dmm/css/images/dmm-logo.png'; ?>" alt="<?php print 'Дом Уюта'; ?>" title="<?php print 'Дом Уюта'; ?>" />
+          <?php /* <img src="<?php //print '/sites/all/themes/dmm/css/images/dmm-logo.png'; ?>" alt="<?php print 'Дом Уюта'; ?>" title="<?php print 'Дом Уюта'; ?>" /> */?>
         </a>
         <div class="descr">
           <div class="title">Дом Уюта</div>
