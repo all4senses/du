@@ -499,6 +499,9 @@ function du_process_page(&$variables) {
       case 'blog_post':
         $variables['breadcrumb'] = theme('breadcrumb', array('breadcrumb' => array(l('Главная', NULL), l('Блог', 'blog'), $variables['node']->title )));
         break;
+      case 'usluga':
+        $variables['breadcrumb'] = theme('breadcrumb', array('breadcrumb' => array(l('Главная', NULL), l('Услуги', 'uslugi'), $variables['node']->title )));
+        break;
     }
   }
   /*
