@@ -200,7 +200,7 @@ function du_image_findImages($body, $nid, $amount = null){
  */
 function du_image_node_view($node, $view_mode) {
   
-  $content_with_zoomable_pictures = array('article', 'blog_post');
+  $content_with_zoomable_pictures = array('article', 'blog_post', 'usluga');
   
   if ($view_mode == 'full') {
       
