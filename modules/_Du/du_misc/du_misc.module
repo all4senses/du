@@ -19,6 +19,115 @@ function du_misc_menu() {
 
 
 /**
+ * Return trimmed teaser with right size (cleared from images) and with separated a styled image, cutted off from the body.
+ */
+function du_misc_getArticleTeaserData($target, $body_full_markup, $nid, $characters_num = NULL, $only_teaser = FALSE) {
+ 
+  $main_image_html = NULL;
+  $main_image = NULL;
+  $matches = NULL;
+  $found_image = NULL;
+  
+  if (preg_match('/<img[^>]+>/i', $body_full_markup, $matches)) {
+    $found_image = TRUE;
+    preg_match_all('/(alt|title|src)="([^"]*)"/i',$matches[0], $matches);
+    foreach ($matches[1] as $index => $key) {
+      $main_image[$key] = $matches[2][$index];
+    }
+    $body_full_markup = preg_replace('/<img[^>]+>/i', '', $body_full_markup);
+  }
+  elseif (preg_match('/\[video:.*v=(.*)\]/i', $body_full_markup, $matches)) {
+    // [video: https://www.youtube.com/watch?v=H1vdPJzzzAY]
+    $video_id = $matches[1];
+    if($main_image['src'] = du_misc_getYoutubeVideoThumb($video_id)) {
+      $found_image = TRUE;
+    }
+    $body_full_markup = preg_replace('|\[video:.*(http.*)\]|', '<a href="$1"> [Watch a video] </a>', $body_full_markup);
+  }
+  
+  
+  if ($found_image) {
+    
+    $main_image['src'] = str_replace('%20', ' ', $main_image['src']);
+    $stream_path = du_misc_getStreamUriFromRelativePath($main_image['src']);
+    $main_image['uri'] = $stream_path;
+    
+    $image_size = getimagesize(ltrim($main_image['src'], '/'));
+
+    // Scale and cut.
+    /*
+    if ($image_size[0] / $image_size[1] > 1.5) {
+      $main_image_html = theme('image_style', array( 'path' => $stream_path, 'style_name' => 'article_thumbnail_h'));
+    }
+    else {
+      $main_image_html = theme('image_style', array( 'path' => $stream_path, 'style_name' => 'article_thumbnail_v'));
+    }
+    */
+    // Scale only.
+    if ($image_size[0] / $image_size[1] > 1) {
+      $style_name = 'article_thumbnail_h';
+      $main_image_html = theme('image_style', array( 'path' => $stream_path, 'style_name' => $style_name));
+      //$main_image['src_themed'] = image_style_url($style_name, $stream_path);
+    }
+    else {
+      $style_name = 'article_thumbnail_v';
+      $main_image_html = theme('image_style', array( 'path' => $stream_path, 'style_name' => $style_name));
+      //$main_image['src_themed'] = image_style_url($style_name, $stream_path);
+    }
+    
+    // Image for sharing.
+    if ($image_size[0] / $image_size[1] > 1) {
+      // Too wide. will not be cutted.
+      $main_image['src_themed'] = image_style_url('share_wide', $stream_path);
+    }
+    elseif ($image_size[1] / $image_size[0] < 1) {
+      // Too tall. will not be cutted.
+      $main_image['src_themed'] = image_style_url('share_tall', $stream_path);
+    }
+    else {
+      //Normal image, will not be cutted.
+      $main_image['src_themed'] = image_style_url('share', $stream_path);
+    }
+    
+    $main_image_html = '<div class="thumb">' . $main_image_html . '</div>';
+    
+    //$main_image_html = theme('image_style', array( 'path' => $stream_path, 'style_name' => 'article_thumbnail'));
+  }
+
+  $teaser = strip_tags($body_full_markup);
+  
+  
+  if (!$characters_num) {
+    if ($main_image_html) {
+      $characters_num = 130;
+    }
+    else {
+      $characters_num = 250;
+    }
+  }
+  
+  // $teaser = text_summary($body_full_markup, 'full_html', $characters_num);
+  $teaser = trim(drupal_substr($teaser, 0, $characters_num));
+  
+  // Replace the last word with ...
+  // preg_match('/^.*\s(.*)$/i', trim(strip_tags($teaser)), $matches);
+  // $last_pos = strrpos($teaser, $matches[1]);
+  $last_pos = strrpos($teaser, ' ');
+  
+  // $teaser = substr_replace ($teaser, '...' . l(t('Read More'), 'node/' . $nid, array('attributes' => array('class' => array('more')))) , $last_pos, strlen($matches[1]));
+  $teaser = substr_replace ($teaser, '...' . l(t('Read More'), 'node/' . $nid, array('attributes' => array('class' => array('more')))), $last_pos);
+
+  if ($only_teaser) {
+    return $main_image_html . $teaser;
+  }
+  else {
+    return array('teaser' => $main_image_html . $teaser, 'main_image' => $main_image);
+  }
+  
+}
+
+
+/**
  * Find the current breadcrumb by the main menu.
  */
 function du_misc_getMenuTrail() {
